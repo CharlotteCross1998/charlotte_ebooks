@@ -41,9 +41,10 @@ def tweet(text1, text2):
 				texto2 -= 1
 		except:
 			pass
-		lastWord = text1.split(' ')[len(text1)-1]
-		if text2[texto2:].startswith(lastWord): #if the last word of the first tweet is the same as the first word of the second tweet, remove it.
-			text1.replace(lastWord, "")
+		#TODO: fix
+		#lastWord = text1.split(' ')[len(text1)-1]
+		#if text2[texto2:].startswith(lastWord): #if the last word of the first tweet is the same as the first word of the second tweet, remove it.
+		#	text1.replace(lastWord, "")
 		finalMessage = text1[:texto1] + " " + text2[texto2:] #get the first half and second half and then mash them up
 		if len(finalMessage) > 140: #if it's over the limt then start again
 			tweet(random.choice(data),random.choice(data1))
