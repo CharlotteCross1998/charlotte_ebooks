@@ -1,8 +1,12 @@
-import tweepy, time, random, oauth, re
-from datetime import datetime
-from sys import getsizeof #for grabbing variable ram usage
+try:
+	import tweepy, time, random, oauth, re, requests
+	from datetime import datetime
+	from sys import getsizeof #for grabbing variable ram usage
+except:
+	sys.exit("Could not import all modules...")
 
 data = []
+media_urls = []
 
 c_key = ""
 c_secret = ""
@@ -13,21 +17,34 @@ auth = tweepy.OAuthHandler(c_key,c_secret)
 auth.set_access_token(a_key,a_secret)
 api = tweepy.API(auth,wait_on_rate_limit=True, wait_on_rate_limit_notify=True, compression=True)
 
+def downloadPhoto(url):
+	print("Downloading " + url + "...")
+	try:
+		img = requests.get(url).content
+		with open('tmp.jpg', 'wb') as file:
+			file.write(img)
+	except Exception as e:
+		print("Error downloading: " + str(e))
+		return False
+	print("Downloaded Successfully!")
+	return True
+
 def log(message):
 	print(message)
 	with open('log.log', 'w+') as file:
 		a = file.read()
 		a += "\n"+str(datetime.now())+": "+message
 		file.write(a)
-		
+
 def tweet(text1, text2):
+	global media_urls
 	try:
-		#Formatting	
+		#Formatting
 		#there's probably a better way with beautiful soup but... yeah
-		text1 = text1.replace("<br>","\n").replace("\\n","\n").replace("&gt;",">").replace("&lt;","<").replace("RT","")
-		text2 = text2.replace("<br>","\n").replace("\\n","\n").replace("&gt;",">").replace("&lt;","<").replace("RT","")
-		text1 = re.sub(r'^https?:\/\/.*[\r\n]*', '', text1, flags=re.MULTILINE)
-		text2 = re.sub(r'^https?:\/\/.*[\r\n]*', '', text2, flags=re.MULTILINE)
+		text1 = text1.replace("<br>","\n").replace("\\n","\n").replace("&gt;",">").replace("&lt;","<").replace("RT"," ")
+		text2 = text2.replace("<br>","\n").replace("\\n","\n").replace("&gt;",">").replace("&lt;","<").replace("RT"," ")
+		text1 = re.sub(r'^.https?:\/\/.*[\r\n]*', ' ', text1, flags=re.MULTILINE)
+		text2 = re.sub(r'^.https?:\/\/.*[\r\n]*', ' ', text2, flags=re.MULTILINE)
 		text1 = ' '.join(filter(lambda x:x[0]!='@', text1.split()))
 		text2 = ' '.join(filter(lambda x:x[0]!='@', text2.split()))
 		#Get half tweets
@@ -50,22 +67,33 @@ def tweet(text1, text2):
 			tweet(random.choice(data),random.choice(data1))
 		log("Tweet1: "+text1)
 		log("Tweet2: "+text2)
-		api.update_status(finalMessage) #tweet!
+		if random.randint(0,29) == 15: # 1 in 30 chance of updating with a photo
+			if downloadPhoto(random.choice(media_urls)):
+				api.update_with_media('tmp.jpg', finalMessage)
+			else:
+				api.update_status(finalMessage)
+		else:
+			api.update_status(finalMessage) #tweet!
 		log("Tweeted: "+finalMessage)
 	except Exception as e:
+		print("Error Tweeting: " + str(e))
 
 def update_data():
 	global data
+	global media_urls
 	log("Updating tweet archive...")
 	if random.randint(0,100) > 90:
 		data = []
-	for page in tweepy.Cursor(api.user_timeline,id='twitter', count=200).pages(16):
+	for page in tweepy.Cursor(api.user_timeline,id='twitter', count=200, include_entities=True).pages(16):
 		for status in page:
+			if 'media' in status.entities:
+				for image in status.entities['media']:
+					if image['type'] == "photo":
+						media_urls += [image['media_url']]
 			data += [status.text]
 	log("Done!")
 
 update_data()
-
 
 while True:
 	#print(random.choice(data))
