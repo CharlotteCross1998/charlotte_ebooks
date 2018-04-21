@@ -1,4 +1,4 @@
-# brad_ebooks
+# charlotte_ebooks
 My own ebooks for twitter written in python using tweepy
 
 # Features
